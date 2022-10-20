@@ -170,7 +170,7 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 	return nil
 }
 
-func updateOCPVersions(ctx context.Context, log *logrus.Entry, fn mirrorCallback) error {
+func updateOrMirrorOCPVersions(ctx context.Context, log *logrus.Entry, fn mirrorCallback) error {
 	dbOpenShiftVersions, err := getVersionsDatabase(ctx, log)
 	if err != nil {
 		return err

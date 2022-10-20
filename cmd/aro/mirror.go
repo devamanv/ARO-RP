@@ -121,7 +121,7 @@ func mirror(ctx context.Context, log *logrus.Entry) error {
 		}
 	}
 
-	err = updateOCPVersions(ctx, log, func(newVersions map[string]api.OpenShiftVersion) {
+	err = updateOrMirrorOCPVersions(ctx, log, func(newVersions map[string]api.OpenShiftVersion) {
 		for _, doc := range newVersions {
 			releases = append(releases, pkgmirror.Node{
 				Version: doc.Properties.Version,

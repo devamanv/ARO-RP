@@ -82,7 +82,7 @@ func main() {
 		err = operator(ctx, log)
 	case "update-versions":
 		checkArgs(1)
-		err = updateOCPVersions(ctx, log, nil)
+		err = updateOrMirrorOCPVersions(ctx, log, nil)
 	default:
 		usage()
 		os.Exit(2)
