@@ -116,6 +116,12 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 		return err
 	}
 
+	if fn != nil {
+		// mirror the updated newVersions
+		fn(existingVersions)
+		return nil
+	}
+
 	latestVersions, err := getLatestOCPVersions(ctx, log)
 	if err != nil {
 		return err
@@ -149,11 +155,11 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 		}
 	}
 
-	if fn != nil {
-		// mirror the updated newVersions
-		fn(newVersions)
-		return nil
-	}
+	// if fn != nil {
+	// 	// mirror the updated newVersions
+	// 	fn(newVersions)
+	// 	return nil
+	// }
 
 	for _, doc := range newVersions {
 		log.Printf("Version %q not found in database, creating", doc.Properties.Version)

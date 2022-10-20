@@ -21,7 +21,7 @@ import (
 	"github.com/Azure/ARO-RP/pkg/util/version"
 )
 
-type mirrorCallback func(map[string]api.OpenShiftVersion)
+type mirrorCallback func(*api.OpenShiftVersionDocuments)
 
 // These are versions that need to be skipped because they are unable
 // to be mirrored
@@ -121,11 +121,11 @@ func mirror(ctx context.Context, log *logrus.Entry) error {
 		}
 	}
 
-	err = updateOrMirrorOCPVersions(ctx, log, func(newVersions map[string]api.OpenShiftVersion) {
-		for _, doc := range newVersions {
+	err = updateOrMirrorOCPVersions(ctx, log, func(ocpversiondocs *api.OpenShiftVersionDocuments) {
+		for _, doc := range ocpversiondocs.OpenShiftVersionDocuments {
 			releases = append(releases, pkgmirror.Node{
-				Version: doc.Properties.Version,
-				Payload: doc.Properties.OpenShiftPullspec,
+				Version: doc.OpenShiftVersion.Properties.Version,
+				Payload: doc.OpenShiftVersion.Properties.OpenShiftPullspec,
 			})
 		}
 	})
