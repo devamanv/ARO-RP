@@ -110,7 +110,7 @@ func getVersionsDatabase(ctx context.Context, log *logrus.Entry) (database.OpenS
 	return dbOpenShiftVersions, nil
 }
 
-func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.OpenShiftVersions, log *logrus.Entry) error {
+func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.OpenShiftVersions, log *logrus.Entry, fn mirrorCallback) error {
 	existingVersions, err := dbOpenShiftVersions.ListAll(ctx)
 	if err != nil {
 		return err
@@ -149,6 +149,12 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 		}
 	}
 
+	if fn != nil {
+		// mirror the updated newVersions
+		fn(newVersions)
+		return nil
+	}
+
 	for _, doc := range newVersions {
 		log.Printf("Version %q not found in database, creating", doc.Properties.Version)
 		newDoc := api.OpenShiftVersionDocument{
@@ -164,13 +170,13 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 	return nil
 }
 
-func updateOCPVersions(ctx context.Context, log *logrus.Entry) error {
+func updateOCPVersions(ctx context.Context, log *logrus.Entry, fn mirrorCallback) error {
 	dbOpenShiftVersions, err := getVersionsDatabase(ctx, log)
 	if err != nil {
 		return err
 	}
 
-	err = updateOpenShiftVersions(ctx, dbOpenShiftVersions, log)
+	err = updateOpenShiftVersions(ctx, dbOpenShiftVersions, log, fn)
 	if err != nil {
 		return err
 	}

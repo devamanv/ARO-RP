@@ -15,10 +15,13 @@ import (
 	"github.com/containers/image/v5/types"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/ARO-RP/pkg/api"
 	"github.com/Azure/ARO-RP/pkg/env"
 	pkgmirror "github.com/Azure/ARO-RP/pkg/mirror"
 	"github.com/Azure/ARO-RP/pkg/util/version"
 )
+
+type mirrorCallback func(map[string]api.OpenShiftVersion)
 
 // These are versions that need to be skipped because they are unable
 // to be mirrored
@@ -98,6 +101,7 @@ func mirror(ctx context.Context, log *logrus.Entry) error {
 					Version: version.InstallStream.Version.String(),
 					Payload: version.InstallStream.PullSpec,
 				})
+				// should we be breaking from here?
 			} else {
 				vers, err := version.ParseVersion(arg)
 				if err != nil {
@@ -115,6 +119,18 @@ func mirror(ctx context.Context, log *logrus.Entry) error {
 				})
 			}
 		}
+	}
+
+	err = updateOCPVersions(ctx, log, func(newVersions map[string]api.OpenShiftVersion) {
+		for _, doc := range newVersions {
+			releases = append(releases, pkgmirror.Node{
+				Version: doc.Properties.Version,
+				Payload: doc.Properties.OpenShiftPullspec,
+			})
+		}
+	})
+	if err != nil {
+		return err
 	}
 
 	var errorOccurred bool
