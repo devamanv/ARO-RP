@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -28,19 +29,23 @@ func getLatestOCPVersions(ctx context.Context, log *logrus.Entry) ([]api.OpenShi
 	acrDomainSuffix := "." + env.Environment().ContainerRegistryDNSSuffix
 
 	dstRepo := dstAcr + acrDomainSuffix
-	var (
-		OpenshiftVersions = []api.OpenShiftVersion{
-			{
-				Properties: api.OpenShiftVersionProperties{
-					Version:           version.InstallStream.Version.String(),
-					OpenShiftPullspec: version.InstallStream.PullSpec,
-					InstallerPullspec: dstRepo + "/aro-installer:release-4.10",
-					Enabled:           true,
-				},
+
+	var openshiftVersions []api.OpenShiftVersion
+
+	for _, version := range version.InstallStreams {
+		openshiftPullSpec := version.Properties.OpenShiftPullspec
+		openshiftVersion := api.OpenShiftVersion{
+			Properties: api.OpenShiftVersionProperties{
+				InstallerPullspec: dstRepo + version.Properties.InstallerPullspec,
+				OpenShiftPullspec: strings.Replace(openshiftPullSpec, "quay.io", dstRepo, 1),
+				Enabled:           version.Properties.Enabled,
+				Version:           version.Properties.Version,
 			},
 		}
-	)
-	return OpenshiftVersions, nil
+		openshiftVersions = append(openshiftVersions, openshiftVersion)
+	}
+
+	return openshiftVersions, nil
 }
 
 func getVersionsDatabase(ctx context.Context, log *logrus.Entry) (database.OpenShiftVersions, error) {
@@ -110,16 +115,10 @@ func getVersionsDatabase(ctx context.Context, log *logrus.Entry) (database.OpenS
 	return dbOpenShiftVersions, nil
 }
 
-func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.OpenShiftVersions, log *logrus.Entry, fn mirrorCallback) error {
+func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.OpenShiftVersions, log *logrus.Entry) error {
 	existingVersions, err := dbOpenShiftVersions.ListAll(ctx)
 	if err != nil {
 		return err
-	}
-
-	if fn != nil {
-		// mirror the updated newVersions
-		fn(existingVersions)
-		return nil
 	}
 
 	latestVersions, err := getLatestOCPVersions(ctx, log)
@@ -155,12 +154,6 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 		}
 	}
 
-	// if fn != nil {
-	// 	// mirror the updated newVersions
-	// 	fn(newVersions)
-	// 	return nil
-	// }
-
 	for _, doc := range newVersions {
 		log.Printf("Version %q not found in database, creating", doc.Properties.Version)
 		newDoc := api.OpenShiftVersionDocument{
@@ -176,13 +169,13 @@ func updateOpenShiftVersions(ctx context.Context, dbOpenShiftVersions database.O
 	return nil
 }
 
-func updateOrMirrorOCPVersions(ctx context.Context, log *logrus.Entry, fn mirrorCallback) error {
+func updateOCPVersions(ctx context.Context, log *logrus.Entry) error {
 	dbOpenShiftVersions, err := getVersionsDatabase(ctx, log)
 	if err != nil {
 		return err
 	}
 
-	err = updateOpenShiftVersions(ctx, dbOpenShiftVersions, log, fn)
+	err = updateOpenShiftVersions(ctx, dbOpenShiftVersions, log)
 	if err != nil {
 		return err
 	}

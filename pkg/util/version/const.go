@@ -31,6 +31,19 @@ var InstallStream = &Stream{
 	PullSpec: "quay.io/openshift-release-dev/ocp-release@sha256:b89ada9261a1b257012469e90d7d4839d0d2f99654f5ce76394fa3f06522b600",
 }
 
+// InstallStreams describe the latest openshift versions should be kept in sync
+// for both mirror as well as update operations.
+var InstallStreams = []api.OpenShiftVersion{
+	{
+		Properties: api.OpenShiftVersionProperties{
+			Version:           NewVersion(4, 10, 27).String(),
+			OpenShiftPullspec: "quay.io/openshift-release-dev/ocp-release@sha256:58a68bea6f4d5c23a10596953f50529417b33c331195deb9041d9fecfa95b400",
+			InstallerPullspec: "/aro-installer:release-4.10",
+			Enabled:           true,
+		},
+	},
+}
+
 // UpgradeStreams describes list of streams we support for upgrades
 var (
 	UpgradeStreams = []*Stream{
